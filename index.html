@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b1238">
+<title>Divya Sankalp – Pooja, Kundli & Samagri</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪔%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi:ital@0;1&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{ink:'#2b1238',plum:'#4a1d5c',saff:'#f2a33a',lotus:'#c2456e',mist:'#f7f3fb'},fontFamily:{disp:['"Tiro Devanagari Hindi"','Georgia','serif'],body:['Mukta','system-ui','sans-serif']}}}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+body{font-family:Mukta,system-ui,sans-serif;background:#f7f3fb;color:#2b1238;-webkit-tap-highlight-color:transparent;padding-bottom:env(safe-area-inset-bottom)}
+.spin{animation:sp 90s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid #c2456e;outline-offset:1px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useMemo}=React;
+
+/* ================= CONFIG – EDIT THESE ================= */
+const CFG={
+  ADMIN_EMAIL:"admin@yourdomain.com",          // all bookings go here
+  BRAND:"Divya Sankalp",
+  WHATSAPP:"",                                  // optional e.g. 919999999999
+  // Free signup at emailjs.com. Create ONE template. In its settings set:
+  //   To Email = {{to_email}}   |   Cc = {{cc_email}}   |   Reply-To = {{reply_to}}
+  //   Subject = {{subject}}     |   Body contains {{message}}
+  // Each booking uses only 1 EmailJS request (≈200 bookings/month on the free plan).
+  EMAILJS:{publicKey:"",serviceId:"",adminTemplate:""}
+  // If EmailJS is left empty, the app falls back to opening the customer's mail app (mailto) with admin + customer copy.
+};
+
+/* ================= DATA ================= */
+const INTENTS={navagraha:["Navagraha","नवग्रह"],health:["Health","स्वास्थ्य"],wealth:["Wealth","धन"],marriage:["Marriage","विवाह"],career:["Career","करियर"],pitru:["Pitru Dosh","पितृ दोष"],home:["Home & Life","गृह एवं जीवन"]};
+const POOJAS=[
+["Navagraha Shanti","नवग्रह शांति","navagraha",2100],["Shani Shanti / Sade Sati","शनि शांति / साढ़े साती","navagraha",1800],["Rahu-Ketu Shanti","राहु-केतु शांति","navagraha",2500],["Mangal Shanti","मंगल शांति","navagraha",1500],["Guru Graha Shanti","गुरु ग्रह शांति","navagraha",1500],["Surya Graha Shanti","सूर्य ग्रह शांति","navagraha",1200],
+["Maha Mrityunjaya Jaap","महामृत्युंजय जाप","health",3100],["Dhanvantari Pooja","धन्वंतरि पूजा","health",1500],["Sudarshan Homam","सुदर्शन होमम","health",2800],["Ayushya Homam","आयुष्य होमम","health",2500],
+["Lakshmi Pooja","लक्ष्मी पूजा","wealth",1100],["Kuber Pooja","कुबेर पूजा","wealth",1500],["Sri Suktam Havan","श्री सूक्तम हवन","wealth",2100],["Satyanarayan Katha","सत्यनारायण कथा","wealth",1800],
+["Gauri-Shankar Vivah Badha Nivaran","गौरी-शंकर विवाह बाधा निवारण","marriage",2100],["Manglik Dosh / Kumbh Vivah","मांगलिक दोष / कुंभ विवाह","marriage",3500],["Katyayani Pooja","कात्यायनी पूजा","marriage",1500],["Santan Gopal Pooja","संतान गोपाल पूजा","marriage",2100],
+["Ganesh Pooja","गणेश पूजा","career",1100],["Saraswati Pooja","सरस्वती पूजा","career",1100],["Durga Saptashati Path","दुर्गा सप्तशती पाठ","career",2500],["Hanuman Chalisa Akhand Path","हनुमान चालीसा अखंड पाठ","career",1100],
+["Pitru Dosh Nivaran","पितृ दोष निवारण","pitru",3100],["Narayan Nagbali","नारायण नागबलि","pitru",11000],["Tripindi Shraddha","त्रिपिंडी श्राद्ध","pitru",5100],["Kaal Sarp Dosh Nivaran","काल सर्प दोष निवारण","pitru",4100],["Pind Daan","पिंडदान","pitru",3100],
+["Griha Pravesh","गृह प्रवेश","home",3100],["Rudrabhishek","रुद्राभिषेक","home",2100],["Vastu Shanti","वास्तु शांति","home",2800],["Bhoomi Pujan","भूमि पूजन","home",2500]
+].map((p,i)=>({id:i,en:p[0],hi:p[1],intent:p[2],price:p[3]}));
+const FORMATS=[
+ {id:"home",m:1.5,en:["In-Person Pooja","Pandit comes to your home"],hi:["घर पर पूजा","पंडित जी आपके घर आएँगे"],ic:"🏠"},
+ {id:"epooja",m:1,en:["E-Pooja (Video)","Join live over video call"],hi:["ई-पूजा (वीडियो)","वीडियो कॉल से जुड़ें"],ic:"📹"},
+ {id:"temple",m:0.8,en:["At Holy Temple","Sankalp in your name, remotely"],hi:["पवित्र मंदिर में","आपके नाम से संकल्प"],ic:"🛕"}];
+const ADDONS=[{id:"samagri",p:499,en:"Pooja Samagri Kit delivery",hi:"पूजा सामग्री किट डिलीवरी"},{id:"prasad",p:299,en:"Prasad delivery by courier",hi:"प्रसाद कूरियर द्वारा"},{id:"vip",p:1100,en:"VIP Pandit booking",hi:"वीआईपी पंडित बुकिंग"}];
+const GOTRAS=["Don't Know / Kashyap","Bharadwaj","Vashishtha","Vishwamitra","Gautam","Atri","Jamadagni","Agastya","Shandilya","Garga","Other"];
+const RASHIS=[["Mesha (Aries)","मेष"],["Vrishabha (Taurus)","वृषभ"],["Mithuna (Gemini)","मिथुन"],["Karka (Cancer)","कर्क"],["Simha (Leo)","सिंह"],["Kanya (Virgo)","कन्या"],["Tula (Libra)","तुला"],["Vrishchik (Scorpio)","वृश्चिक"],["Dhanu (Sagittarius)","धनु"],["Makar (Capricorn)","मकर"],["Kumbh (Aquarius)","कुंभ"],["Meen (Pisces)","मीन"],["Don't know","पता नहीं"]];
+const PRODUCTS=[
+ {id:"g1",c:"gem",ic:"💎",en:"Blue Sapphire (Neelam) 5.25 ct",hi:"नीलम 5.25 रत्ती",p:18500,cert:1},
+ {id:"g2",c:"gem",ic:"🔴",en:"Natural Ruby (Manik) 4 ct",hi:"माणिक 4 रत्ती",p:14500,cert:1},
+ {id:"g3",c:"gem",ic:"🟡",en:"Yellow Sapphire (Pukhraj) 5 ct",hi:"पुखराज 5 रत्ती",p:22000,cert:1},
+ {id:"g4",c:"gem",ic:"🟢",en:"Emerald (Panna) 4.5 ct",hi:"पन्ना 4.5 रत्ती",p:16000,cert:1},
+ {id:"r1",c:"rud",ic:"📿",en:"5 Mukhi Rudraksha Mala (108)",hi:"5 मुखी रुद्राक्ष माला (108)",p:1299,cert:1},
+ {id:"r2",c:"rud",ic:"🔱",en:"Gauri Shankar Rudraksha",hi:"गौरी शंकर रुद्राक्ष",p:2499,cert:1},
+ {id:"y1",c:"yan",ic:"🔯",en:"Shri Yantra – Copper, Energized",hi:"श्री यंत्र – तांबा, प्राण-प्रतिष्ठित",p:1199},
+ {id:"y2",c:"yan",ic:"🕉️",en:"Kuber Yantra – Brass",hi:"कुबेर यंत्र – पीतल",p:899},
+ {id:"t1",c:"thali",ic:"🪔",en:"Brass Pooja Thali Set (9 pc)",hi:"पीतल पूजा थाली सेट (9 पीस)",p:1799},
+ {id:"t2",c:"thali",ic:"🧺",en:"Complete Pooja Samagri Kit",hi:"संपूर्ण पूजा सामग्री किट",p:499},
+ {id:"i1",c:"idol",ic:"🐘",en:"Ganesh Idol – Marble, 9 inch",hi:"गणेश मूर्ति – संगमरमर, 9 इंच",p:3499},
+ {id:"i2",c:"idol",ic:"🪷",en:"Lakshmi Idol – Brass, 8 inch",hi:"लक्ष्मी मूर्ति – पीतल, 8 इंच",p:2999},
+ {id:"s1",c:"prasad",ic:"🍬",en:"Temple Prasad Box",hi:"मंदिर प्रसाद बॉक्स",p:399}];
+const CATS={all:["All","सभी"],gem:["Gemstones","रत्न"],rud:["Rudraksha","रुद्राक्ष"],yan:["Yantras","यंत्र"],thali:["Thali & Samagri","थाली व सामग्री"],idol:["Idols","मूर्तियाँ"],prasad:["Prasad","प्रसाद"]};
+const KUNDLI=[
+ {id:"pdf",p:299,ic:"📄",en:["Instant Kundli PDF","AI-generated report. Basic version is free, detailed ₹299."],hi:["तुरंत कुंडली PDF","AI रिपोर्ट। बेसिक मुफ़्त, विस्तृत ₹299।"]},
+ {id:"print",p:1499,ic:"📕",en:["Printed Hardbound Kundli","Leather / hardbound book delivered home."],hi:["छपी हार्डबाउंड कुंडली","लेदर / हार्डबाउंड पुस्तक घर पर।"]},
+ {id:"call",p:999,ic:"🎧",en:["1-on-1 Astrologer Call","Audio or video with a verified astrologer."],hi:["ज्योतिषी से 1-on-1 कॉल","सत्यापित ज्योतिषी से ऑडियो/वीडियो।"]}];
+
+const T={
+en:{tag:"Sacred rituals, booked in minutes.",sub:"Book any pooja across India, get your Kundli, and order certified spiritual products. Confirmation arrives on your email.",home:"Home",pooja:"Pooja",kundli:"Kundli",store:"Store",cart:"Cart",book:"Book a Pooja",bookK:"Order Kundli",shop:"Shop Samagri",
+ s1:"Choose a format",s2:"Choose by intent",s3:"Select pooja",all:"All intents",sankalp:"Sankalp details",devotee:"Devotee name",gotra:"Gotra",rashi:"Rashi / Zodiac",sel:"Select",date:"Preferred date",time:"Preferred time",email:"Email ID",phone:"Contact number",pin:"PIN code",city:"City / District",state:"State",addr:"Full address",addons:"Add-on services",total:"Total",submit:"Send booking request",
+ birthName:"Birth name",gender:"Gender",male:"Male",female:"Female",other:"Other",dob:"Birth date",tob:"Birth time",pob:"Birth place",lat:"Latitude",lon:"Longitude",tz:"Timezone",chart:"Chart style",north:"North Indian",south:"South Indian",east:"East Indian",kopt:"What would you like?",locate:"Fetching location…",found:"Location found",findLoc:"Fetch exact coordinates",slot:"Preferred call slot",
+ add:"Add to cart",empty:"Your cart is empty. Browse the store to add items.",checkout:"Place order request",qty:"Qty",cert:"Lab-certified",
+ okT:"Request sent",okB:"Our team will contact you shortly. A confirmation has been sent to your email.",okM:"Your mail app has opened with the request. Please press Send to complete it.",close:"Close",err:"Could not send. Please try again.",music:"Music",
+ foot:"Requests are sent to our team by email. No payment is taken on this page.",why:["Pan-India pandits","Verified astrologers","Certified products","Email confirmation"]},
+hi:{tag:"पवित्र अनुष्ठान, कुछ ही मिनटों में बुक।",sub:"पूरे भारत में कोई भी पूजा बुक करें, कुंडली पाएँ और प्रमाणित आध्यात्मिक उत्पाद मँगाएँ। पुष्टि आपके ईमेल पर आएगी।",home:"होम",pooja:"पूजा",kundli:"कुंडली",store:"स्टोर",cart:"कार्ट",book:"पूजा बुक करें",bookK:"कुंडली मँगाएँ",shop:"सामग्री खरीदें",
+ s1:"प्रारूप चुनें",s2:"उद्देश्य से चुनें",s3:"पूजा चुनें",all:"सभी उद्देश्य",sankalp:"संकल्प विवरण",devotee:"यजमान का नाम",gotra:"गोत्र",rashi:"राशि",sel:"चुनें",date:"पसंदीदा तिथि",time:"पसंदीदा समय",email:"ईमेल आईडी",phone:"संपर्क नंबर",pin:"पिन कोड",city:"शहर / जिला",state:"राज्य",addr:"पूरा पता",addons:"अतिरिक्त सेवाएँ",total:"कुल",submit:"बुकिंग अनुरोध भेजें",
+ birthName:"जन्म नाम",gender:"लिंग",male:"पुरुष",female:"महिला",other:"अन्य",dob:"जन्म तिथि",tob:"जन्म समय",pob:"जन्म स्थान",lat:"अक्षांश",lon:"देशांतर",tz:"समय क्षेत्र",chart:"चार्ट शैली",north:"उत्तर भारतीय",south:"दक्षिण भारतीय",east:"पूर्वी भारतीय",kopt:"आप क्या चाहते हैं?",locate:"स्थान खोज रहे हैं…",found:"स्थान मिल गया",findLoc:"सटीक निर्देशांक लाएँ",slot:"कॉल का पसंदीदा समय",
+ add:"कार्ट में जोड़ें",empty:"आपका कार्ट खाली है। स्टोर से सामान जोड़ें।",checkout:"ऑर्डर अनुरोध भेजें",qty:"मात्रा",cert:"लैब-प्रमाणित",
+ okT:"अनुरोध भेज दिया गया",okB:"हमारी टीम जल्द संपर्क करेगी। पुष्टि आपके ईमेल पर भेज दी गई है।",okM:"आपका मेल ऐप खुल गया है। पूरा करने के लिए Send दबाएँ।",close:"बंद करें",err:"भेजा नहीं जा सका। कृपया फिर प्रयास करें।",music:"संगीत",
+ foot:"अनुरोध ईमेल द्वारा हमारी टीम को भेजे जाते हैं। इस पेज पर भुगतान नहीं लिया जाता।",why:["पूरे भारत में पंडित","सत्यापित ज्योतिषी","प्रमाणित उत्पाद","ईमेल पुष्टि"]}};
+
+const inr=n=>"₹"+Number(n).toLocaleString("en-IN");
+
+/* ================= HELPERS ================= */
+async function sendMail(subject,rows,toEmail,name){
+  const msg=rows.map(r=>r[0]+": "+r[1]).join("\n"), E=CFG.EMAILJS;
+  if(E.publicKey&&E.serviceId&&window.emailjs){
+    emailjs.init({publicKey:E.publicKey});
+    // ONE request only: goes to admin, customer is in CC (set Cc = {{cc_email}} in the EmailJS template)
+    await emailjs.send(E.serviceId,E.adminTemplate,{
+      to_email:CFG.ADMIN_EMAIL, cc_email:toEmail, reply_to:toEmail, name,
+      subject:subject+" – "+name,
+      message:"Namaste "+name+",\nThank you for your request. Our team will contact you shortly.\n\nRequest details:\n"+msg+"\n\n– "+CFG.BRAND
+    });
+    return "sent";
+  }
+  location.href=`mailto:${CFG.ADMIN_EMAIL}?cc=${encodeURIComponent(toEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+  return "mailto";
+}
+async function lookupPin(pin){
+  const r=await (await fetch("https://api.postalpincode.in/pincode/"+pin)).json();
+  const o=r[0]&&r[0].PostOffice&&r[0].PostOffice[0]; if(!o) throw 0;
+  let lat="",lon="";
+  try{const g=await (await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`)).json();
+    if(g[0]){lat=(+g[0].lat).toFixed(4);lon=(+g[0].lon).toFixed(4)}}catch(e){}
+  return {city:o.District,state:o.State,lat,lon};
+}
+function useMusic(){
+  const ref=useRef(null); const [on,setOn]=useState(false);
+  const toggle=()=>{
+    if(!ref.current){
+      const C=new (window.AudioContext||window.webkitAudioContext)(), master=C.createGain(); master.gain.value=0; master.connect(C.destination);
+      [130.81,196,261.63,392,523.25].forEach((f,i)=>{
+        const o=C.createOscillator(),g=C.createGain(),l=C.createOscillator(),lg=C.createGain();
+        o.type=i%2?"sine":"triangle";o.frequency.value=f;g.gain.value=i<2?0.05:0.018;
+        l.frequency.value=0.07+i*0.03;lg.gain.value=g.gain.value*0.6;l.connect(lg);lg.connect(g.gain);
+        o.connect(g);g.connect(master);o.start();l.start();});
+      ref.current={C,master};
+    }
+    const {C,master}=ref.current; C.resume();
+    const next=!on; master.gain.setTargetAtTime(next?0.5:0,C.currentTime,0.4); setOn(next);
+  };
+  return [on,toggle];
+}
+
+/* ================= UI ATOMS ================= */
+const inp="w-full rounded-xl border border-plum/20 bg-white px-3.5 py-3 text-base placeholder:text-ink/40";
+function F({label,children,span}){return <label className={"block "+(span?"sm:col-span-2":"")}><span className="mb-1 block text-sm font-semibold text-plum">{label}</span>{children}</label>}
+function Card({children,className=""}){return <div className={"rounded-2xl bg-white p-5 shadow-sm ring-1 ring-plum/10 "+className}>{children}</div>}
+function Choice({active,onClick,ic,title,sub,right}){
+  return <button type="button" onClick={onClick} aria-pressed={active} className={"flex w-full items-start gap-3 rounded-xl p-4 text-left ring-1 transition "+(active?"bg-ink text-white ring-ink":"bg-white ring-plum/15 hover:ring-lotus")}>
+    <span className="text-2xl">{ic}</span><span className="flex-1"><span className="block font-semibold">{title}</span><span className={"block text-sm "+(active?"text-white/75":"text-ink/60")}>{sub}</span></span>{right&&<span className="font-semibold text-saff">{right}</span>}</button>}
+function Mandala({className}){
+  const petals=[...Array(16)].map((_,i)=><ellipse key={i} cx="100" cy="42" rx="9" ry="30" transform={`rotate(${i*22.5} 100 100)`} fill="none" stroke="#f2a33a" strokeWidth="1.2"/>);
+  const inner=[...Array(8)].map((_,i)=><ellipse key={i} cx="100" cy="68" rx="7" ry="20" transform={`rotate(${i*45+22.5} 100 100)`} fill="#c2456e" fillOpacity=".55"/>);
+  return <svg viewBox="0 0 200 200" className={className} aria-hidden="true"><g className="spin" style={{transformOrigin:"100px 100px"}}>{petals}{inner}<circle cx="100" cy="100" r="92" fill="none" stroke="#f2a33a" strokeOpacity=".5"/><circle cx="100" cy="100" r="14" fill="#f2a33a"/></g></svg>}
+function Chart({type,size=64}){
+  const s="#4a1d5c";
+  return <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={s} strokeWidth="2"><rect x="2" y="2" width="96" height="96"/>
+   {type==="north"&&<><path d="M2 2L98 98M98 2L2 98"/><path d="M50 2L98 50L50 98L2 50Z"/></>}
+   {type==="south"&&<><path d="M26 2V98M50 2V26M50 74V98M74 2V98M2 26H98M2 50H26M74 50H98M2 74H98"/></>}
+   {type==="east"&&<><path d="M34 2V98M66 2V98M2 34H98M2 66H98"/><path d="M2 2L34 34M98 2L66 34M2 98L34 66M98 98L66 66"/></>}</svg>}
+function PinFields({v,set,t,full=true}){
+  const [st,setSt]=useState("");
+  const go=async val=>{ if(!/^\d{6}$/.test(val))return; setSt("…");
+    try{const r=await lookupPin(val); set(p=>({...p,city:r.city,state:r.state,lat:r.lat||p.lat,lon:r.lon||p.lon,tz:"Asia/Kolkata"})); setSt("✓ "+t.found)}catch(e){setSt("PIN not found")}};
+  return <>
+    <F label={t.pin}><input className={inp} inputMode="numeric" maxLength={6} required value={v.pin||""} placeholder="110001" onChange={e=>{const x=e.target.value.replace(/\D/g,"");set(p=>({...p,pin:x}));go(x)}}/><span className="text-xs text-lotus">{st}</span></F>
+    <F label={t.city}><input className={inp} required value={v.city||""} onChange={e=>set(p=>({...p,city:e.target.value}))}/></F>
+    <F label={t.state}><input className={inp} required value={v.state||""} onChange={e=>set(p=>({...p,state:e.target.value}))}/></F>
+    {full&&<F label={t.addr} span><textarea rows="2" className={inp} required value={v.addr||""} onChange={e=>set(p=>({...p,addr:e.target.value}))}/></F>}</>}
+
+/* ================= POOJA ================= */
+function PoojaView({t,lang,submit}){
+  const [v,set]=useState({fmt:"epooja",intent:"all",gotra:GOTRAS[0],add:{}});
+  const list=POOJAS.filter(p=>v.intent==="all"||p.intent===v.intent);
+  const pj=POOJAS.find(p=>p.id===+v.pooja), fm=FORMATS.find(f=>f.id===v.fmt);
+  const addTotal=ADDONS.filter(a=>v.add[a.id]).reduce((s,a)=>s+a.p,0);
+  const total=pj?Math.round(pj.price*fm.m)+addTotal:0;
+  const needAddr=v.fmt==="home"||v.add.samagri||v.add.prasad;
+  const on=e=>{e.preventDefault(); if(!pj)return;
+    submit("Pooja Booking – "+pj.en,[["Pooja",pj.en+" ("+pj.hi+")"],["Format",fm.en[0]],["Devotee Name",v.name],["Gotra",v.gotra],["Rashi",v.rashi],["Date",v.date],["Time",v.time],["Email",v.email],["Phone",v.phone],["PIN",v.pin],["City/State",v.city+", "+v.state],["Address",v.addr||"-"],["Add-ons",ADDONS.filter(a=>v.add[a.id]).map(a=>a.en).join(", ")||"None"],["Estimated total",inr(total)]],v.email,v.name)};
+  return <form onSubmit={on} className="mx-auto max-w-3xl space-y-6">
+    <Card><h2 className="mb-3 font-disp text-xl">{t.s1}</h2><div className="grid gap-3 sm:grid-cols-3">
+      {FORMATS.map(f=><Choice key={f.id} active={v.fmt===f.id} onClick={()=>set(p=>({...p,fmt:f.id}))} ic={f.ic} title={f[lang][0]} sub={f[lang][1]}/>)}</div></Card>
+    <Card><h2 className="mb-3 font-disp text-xl">{t.s2}</h2>
+      <div className="mb-4 flex flex-wrap gap-2">{["all",...Object.keys(INTENTS)].map(k=><button type="button" key={k} onClick={()=>set(p=>({...p,intent:k,pooja:""}))} className={"rounded-full px-4 py-2 text-sm font-semibold ring-1 "+(v.intent===k?"bg-lotus text-white ring-lotus":"bg-white ring-plum/20")}>{k==="all"?t.all:INTENTS[k][lang==="en"?0:1]}</button>)}</div>
+      <F label={t.s3}><select required className={inp} value={v.pooja||""} onChange={e=>set(p=>({...p,pooja:e.target.value}))}><option value="">{t.sel}…</option>
+        {Object.keys(INTENTS).filter(k=>v.intent==="all"||k===v.intent).map(k=><optgroup key={k} label={INTENTS[k][lang==="en"?0:1]}>{list.filter(p=>p.intent===k).map(p=><option key={p.id} value={p.id}>{p[lang]} – {inr(Math.round(p.price*fm.m))}</option>)}</optgroup>)}</select></F></Card>
+    <Card><h2 className="mb-3 font-disp text-xl">{t.sankalp}</h2><div className="grid gap-4 sm:grid-cols-2">
+      <F label={t.devotee}><input className={inp} required value={v.name||""} onChange={e=>set({...v,name:e.target.value})}/></F>
+      <F label={t.gotra}><select className={inp} value={v.gotra} onChange={e=>set({...v,gotra:e.target.value})}>{GOTRAS.map(g=><option key={g}>{g}</option>)}</select></F>
+      <F label={t.rashi}><select required className={inp} value={v.rashi||""} onChange={e=>set({...v,rashi:e.target.value})}><option value="">{t.sel}…</option>{RASHIS.map(r=><option key={r[0]} value={r[0]}>{lang==="en"?r[0]:r[1]}</option>)}</select></F>
+      <F label={t.date}><input type="date" min={new Date().toISOString().slice(0,10)} className={inp} required value={v.date||""} onChange={e=>set({...v,date:e.target.value})}/></F>
+      <F label={t.time}><input type="time" className={inp} required value={v.time||""} onChange={e=>set({...v,time:e.target.value})}/></F>
+      <F label={t.phone}><input type="tel" className={inp} required pattern="[0-9+ ]{10,14}" value={v.phone||""} onChange={e=>set({...v,phone:e.target.value})}/></F>
+      <F label={t.email} span><input type="email" className={inp} required value={v.email||""} onChange={e=>set({...v,email:e.target.value})}/></F>
+      {needAddr?<PinFields v={v} set={set} t={t}/>:<PinFields v={v} set={set} t={t} full={false}/>}</div></Card>
+    <Card><h2 className="mb-3 font-disp text-xl">{t.addons}</h2><div className="space-y-2">
+      {ADDONS.map(a=><label key={a.id} className="flex items-center gap-3 rounded-xl p-3 ring-1 ring-plum/15"><input type="checkbox" className="h-5 w-5 accent-lotus" checked={!!v.add[a.id]} onChange={e=>set({...v,add:{...v.add,[a.id]:e.target.checked}})}/><span className="flex-1">{a[lang]}</span><b className="text-plum">{inr(a.p)}</b></label>)}</div></Card>
+    <div className="sticky bottom-20 z-10 flex items-center justify-between gap-3 rounded-2xl bg-ink p-4 text-white shadow-xl md:bottom-4">
+      <div><div className="text-sm text-white/70">{t.total}</div><div className="font-disp text-2xl text-saff">{inr(total)}</div></div>
+      <button className="rounded-xl bg-saff px-6 py-3 font-bold text-ink">{t.submit}</button></div></form>}
+
+/* ================= KUNDLI ================= */
+function KundliView({t,lang,submit}){
+  const [v,set]=useState({gender:"Male",chart:"north",opt:"pdf",tz:"Asia/Kolkata"});
+  const o=KUNDLI.find(k=>k.id===v.opt);
+  const on=e=>{e.preventDefault();
+    submit("Kundli Order – "+o.en[0],[["Service",o.en[0]+" ("+inr(o.p)+")"],["Birth Name",v.name],["Gender",v.gender],["Birth Date",v.dob],["Birth Time",v.tob],["Birth Place",v.city+", "+v.state+" – "+v.pin],["Lat/Long",v.lat+", "+v.lon],["Timezone",v.tz],["Chart Style",v.chart],["Email",v.email],["Phone",v.phone],["Delivery Address",v.addr||"-"],["Call Slot",v.slot||"-"]],v.email,v.name)};
+  return <form onSubmit={on} className="mx-auto max-w-3xl space-y-6">
+    <Card><h2 className="mb-3 font-disp text-xl">{t.kopt}</h2><div className="space-y-3">
+      {KUNDLI.map(k=><Choice key={k.id} active={v.opt===k.id} onClick={()=>set({...v,opt:k.id})} ic={k.ic} title={k[lang][0]} sub={k[lang][1]} right={k.id==="pdf"?"₹0–299":inr(k.p)}/>)}</div></Card>
+    <Card><h2 className="mb-3 font-disp text-xl">{t.kundli}</h2><div className="grid gap-4 sm:grid-cols-2">
+      <F label={t.birthName}><input className={inp} required value={v.name||""} onChange={e=>set({...v,name:e.target.value})}/></F>
+      <F label={t.gender}><select className={inp} value={v.gender} onChange={e=>set({...v,gender:e.target.value})}><option>Male</option><option>Female</option><option>Other</option></select></F>
+      <F label={t.dob}><input type="date" max={new Date().toISOString().slice(0,10)} className={inp} required value={v.dob||""} onChange={e=>set({...v,dob:e.target.value})}/></F>
+      <F label={t.tob}><input type="time" className={inp} required value={v.tob||""} onChange={e=>set({...v,tob:e.target.value})}/></F>
+      <PinFields v={v} set={set} t={t} full={false}/>
+      <F label={t.lat}><input className={inp} required value={v.lat||""} onChange={e=>set({...v,lat:e.target.value})} placeholder="28.6139"/></F>
+      <F label={t.lon}><input className={inp} required value={v.lon||""} onChange={e=>set({...v,lon:e.target.value})} placeholder="77.2090"/></F>
+      <F label={t.tz} span><input className={inp} value={v.tz} onChange={e=>set({...v,tz:e.target.value})}/></F>
+      <F label={t.email}><input type="email" className={inp} required value={v.email||""} onChange={e=>set({...v,email:e.target.value})}/></F>
+      <F label={t.phone}><input type="tel" className={inp} required pattern="[0-9+ ]{10,14}" value={v.phone||""} onChange={e=>set({...v,phone:e.target.value})}/></F>
+      {v.opt==="print"&&<F label={t.addr} span><textarea rows="2" className={inp} required value={v.addr||""} onChange={e=>set({...v,addr:e.target.value})}/></F>}
+      {v.opt==="call"&&<F label={t.slot} span><input type="datetime-local" className={inp} required value={v.slot||""} onChange={e=>set({...v,slot:e.target.value})}/></F>}</div></Card>
+    <Card><h2 className="mb-3 font-disp text-xl">{t.chart}</h2><div className="grid grid-cols-3 gap-3">
+      {["north","south","east"].map(c=><button type="button" key={c} onClick={()=>set({...v,chart:c})} aria-pressed={v.chart===c} className={"flex flex-col items-center gap-2 rounded-xl p-3 ring-1 "+(v.chart===c?"bg-saff/20 ring-saff":"ring-plum/15 bg-white")}><Chart type={c}/><span className="text-sm font-semibold">{t[c]}</span></button>)}</div></Card>
+    <button className="w-full rounded-xl bg-ink px-6 py-4 text-lg font-bold text-saff">{t.submit} · {inr(o.p)}</button></form>}
+
+/* ================= STORE ================= */
+function StoreView({t,lang,cart,setCart}){
+  const [cat,setCat]=useState("all");
+  const items=PRODUCTS.filter(p=>cat==="all"||p.c===cat);
+  return <div className="mx-auto max-w-5xl">
+    <div className="mb-5 flex gap-2 overflow-x-auto pb-1">{Object.keys(CATS).map(k=><button key={k} onClick={()=>setCat(k)} className={"shrink-0 rounded-full px-4 py-2 text-sm font-semibold ring-1 "+(cat===k?"bg-lotus text-white ring-lotus":"bg-white ring-plum/20")}>{CATS[k][lang==="en"?0:1]}</button>)}</div>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">{items.map(p=><Card key={p.id} className="flex flex-col !p-4">
+      <div className="mb-3 grid h-28 place-items-center rounded-xl bg-gradient-to-br from-plum/10 to-saff/25 text-5xl">{p.ic}</div>
+      <div className="flex-1 font-semibold leading-snug">{p[lang]}</div>
+      {p.cert&&<div className="mt-1 text-xs font-semibold text-lotus">✔ {t.cert}</div>}
+      <div className="my-2 font-disp text-xl text-plum">{inr(p.p)}</div>
+      <button onClick={()=>setCart(c=>({...c,[p.id]:(c[p.id]||0)+1}))} className="rounded-xl bg-ink py-2.5 font-semibold text-white">{t.add}</button></Card>)}</div></div>}
+
+function CartDrawer({t,lang,cart,setCart,close,submit}){
+  const [v,set]=useState({});
+  const rows=PRODUCTS.filter(p=>cart[p.id]); const total=rows.reduce((s,p)=>s+p.p*cart[p.id],0);
+  const on=e=>{e.preventDefault();
+    submit("Product Order Request",[...rows.map(p=>["Item",p.en+" × "+cart[p.id]+" = "+inr(p.p*cart[p.id])]),["Total",inr(total)],["Name",v.name],["Email",v.email],["Phone",v.phone],["Ship to",`${v.addr}, ${v.city}, ${v.state} – ${v.pin}`]],v.email,v.name,()=>setCart({}))};
+  return <div className="fixed inset-0 z-50 flex justify-end bg-ink/60" onClick={close}>
+    <form onSubmit={on} onClick={e=>e.stopPropagation()} className="h-full w-full max-w-md overflow-y-auto bg-mist p-5">
+      <div className="mb-4 flex items-center justify-between"><h2 className="font-disp text-2xl">{t.cart}</h2><button type="button" onClick={close} className="text-3xl leading-none" aria-label={t.close}>×</button></div>
+      {!rows.length?<p className="py-10 text-center text-ink/60">{t.empty}</p>:<>
+        <div className="space-y-2">{rows.map(p=><div key={p.id} className="flex items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-plum/10"><span className="text-2xl">{p.ic}</span><div className="flex-1 text-sm font-semibold">{p[lang]}<div className="text-plum">{inr(p.p)}</div></div>
+          <div className="flex items-center gap-2"><button type="button" className="h-8 w-8 rounded-full ring-1 ring-plum/30" onClick={()=>setCart(c=>{const n={...c,[p.id]:c[p.id]-1};if(!n[p.id])delete n[p.id];return n})}>−</button><b>{cart[p.id]}</b><button type="button" className="h-8 w-8 rounded-full ring-1 ring-plum/30" onClick={()=>setCart(c=>({...c,[p.id]:c[p.id]+1}))}>+</button></div></div>)}</div>
+        <div className="my-4 flex justify-between text-lg font-bold"><span>{t.total}</span><span className="text-plum">{inr(total)}</span></div>
+        <div className="grid gap-3">
+          <F label={t.devotee}><input className={inp} required onChange={e=>set({...v,name:e.target.value})}/></F>
+          <F label={t.email}><input type="email" className={inp} required onChange={e=>set({...v,email:e.target.value})}/></F>
+          <F label={t.phone}><input type="tel" className={inp} required pattern="[0-9+ ]{10,14}" onChange={e=>set({...v,phone:e.target.value})}/></F>
+          <PinFields v={v} set={set} t={t}/></div>
+        <button className="mt-5 w-full rounded-xl bg-ink py-4 text-lg font-bold text-saff">{t.checkout}</button></>}
+    </form></div>}
+
+/* ================= HOME ================= */
+function HomeView({t,go}){
+  return <div className="mx-auto max-w-5xl">
+    <section className="relative overflow-hidden rounded-3xl bg-ink px-6 py-12 text-white sm:px-12 sm:py-16">
+      <Mandala className="pointer-events-none absolute -right-24 -top-24 h-[26rem] w-[26rem] opacity-70 sm:-right-10 sm:h-[34rem] sm:w-[34rem]"/>
+      <div className="relative max-w-xl"><h1 className="font-disp text-4xl leading-tight sm:text-5xl">{t.tag}</h1>
+      <p className="mt-4 text-lg text-white/80">{t.sub}</p>
+      <div className="mt-7 flex flex-wrap gap-3">
+        <button onClick={()=>go("pooja")} className="rounded-xl bg-saff px-6 py-3.5 font-bold text-ink">{t.book}</button>
+        <button onClick={()=>go("kundli")} className="rounded-xl px-6 py-3.5 font-bold ring-1 ring-white/50">{t.bookK}</button>
+        <button onClick={()=>go("store")} className="rounded-xl px-6 py-3.5 font-bold ring-1 ring-white/50">{t.shop}</button></div></div></section>
+    <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">{t.why.map((w,i)=><Card key={i} className="!p-4 text-center font-semibold text-plum">{["🛕","🔮","💎","✉️"][i]}<div>{w}</div></Card>)}</div></div>}
+
+/* ================= APP ================= */
+function App(){
+  const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
+  const [view,setView]=useState("home"); const [cart,setCart]=useState({}); const [showCart,setShowCart]=useState(false);
+  const [modal,setModal]=useState(null); const [busy,setBusy]=useState(false);
+  const [music,toggleMusic]=useMusic();
+  useEffect(()=>{localStorage.setItem("lang",lang);document.documentElement.lang=lang==="hi"?"hi":"en"},[lang]);
+  useEffect(()=>{window.scrollTo(0,0)},[view]);
+  useEffect(()=>{ // PWA manifest + service worker (sw.js optional file)
+    const m={name:CFG.BRAND,short_name:"Sankalp",start_url:".",display:"standalone",background_color:"#2b1238",theme_color:"#2b1238",icons:[{src:"data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%232b1238'/><text y='.78em' x='14' font-size='70'>🪔</text></svg>"),sizes:"any",type:"image/svg+xml",purpose:"any"}]};
+    const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"}));document.head.appendChild(l);
+    if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  },[]);
+  const submit=async(subject,rows,email,name,done)=>{
+    setBusy(true);
+    try{const r=await sendMail(subject,rows,email,name); setModal(r==="sent"?t.okB:t.okM); done&&done(); setShowCart(false)}
+    catch(e){setModal(t.err)} setBusy(false)};
+  const count=Object.values(cart).reduce((a,b)=>a+b,0);
+  const nav=[["home","🏠"],["pooja","🪔"],["kundli","🔮"],["store","🛍️"]];
+  return <div className="min-h-screen pb-24 md:pb-10">
+    <header className="sticky top-0 z-40 bg-ink text-white shadow-lg" style={{paddingTop:"env(safe-area-inset-top)"}}>
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
+        <button onClick={()=>setView("home")} className="mr-auto font-disp text-xl text-saff">🪔 {CFG.BRAND}</button>
+        <nav className="hidden gap-1 md:flex">{nav.map(n=><button key={n[0]} onClick={()=>setView(n[0])} className={"rounded-lg px-3 py-2 font-semibold "+(view===n[0]?"bg-white/15":"text-white/75 hover:text-white")}>{t[n[0]]}</button>)}</nav>
+        <button onClick={toggleMusic} aria-label={t.music} aria-pressed={music} title={t.music} className="grid h-10 w-10 place-items-center rounded-full ring-1 ring-white/30">{music?"🔊":"🔇"}</button>
+        <button onClick={()=>setLang(lang==="en"?"hi":"en")} className="h-10 rounded-full px-3 text-sm font-bold ring-1 ring-white/30">{lang==="en"?"हिं":"EN"}</button>
+        <button onClick={()=>setShowCart(true)} className="relative grid h-10 w-10 place-items-center rounded-full bg-saff text-ink" aria-label={t.cart}>🛒{count>0&&<span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-lotus px-1 text-xs font-bold text-white">{count}</span>}</button>
+      </div></header>
+    <main className="px-4 py-6">
+      {view!=="home"&&<h1 className="mx-auto mb-5 max-w-3xl font-disp text-3xl">{view==="pooja"?t.book:view==="kundli"?t.bookK:t.shop}</h1>}
+      {view==="home"&&<HomeView t={t} go={setView}/>}
+      {view==="pooja"&&<PoojaView t={t} lang={lang} submit={submit}/>}
+      {view==="kundli"&&<KundliView t={t} lang={lang} submit={submit}/>}
+      {view==="store"&&<StoreView t={t} lang={lang} cart={cart} setCart={setCart}/>}
+      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-ink/55">{t.foot}</p>
+    </main>
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 bg-white shadow-[0_-4px_16px_rgba(43,18,56,.12)] md:hidden" style={{paddingBottom:"env(safe-area-inset-bottom)"}}>
+      {nav.map(n=><button key={n[0]} onClick={()=>setView(n[0])} className={"py-2.5 text-xs font-semibold "+(view===n[0]?"text-lotus":"text-ink/60")}><div className="text-xl">{n[1]}</div>{t[n[0]]}</button>)}</nav>
+    {showCart&&<CartDrawer t={t} lang={lang} cart={cart} setCart={setCart} close={()=>setShowCart(false)} submit={submit}/>}
+    {(busy||modal)&&<div className="fixed inset-0 z-[60] grid place-items-center bg-ink/70 p-4"><div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center">
+      {busy?<p className="font-semibold">…</p>:<><div className="text-4xl">🙏</div><h3 className="mt-2 font-disp text-2xl">{modal===t.err?"":t.okT}</h3><p className="mt-2 text-ink/70">{modal}</p><button onClick={()=>{setModal(null);if(modal!==t.err)setView("home")}} className="mt-5 w-full rounded-xl bg-ink py-3 font-bold text-white">{t.close}</button></>}</div></div>}
+  </div>}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
