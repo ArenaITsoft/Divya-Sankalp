@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2b1238">
 <title>Divya Sankalp – Pooja, Kundli & Samagri</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪔%3C/text%3E%3C/svg%3E">
+<meta name="description" content="Book any pooja across India, order your Kundli, and shop certified gemstones, rudraksha and samagri. Confirmation on email.">
+<!-- ===== SHARE PREVIEW (WhatsApp, Facebook, Telegram, LinkedIn, X) =====
+     Replace https://yourdomain.com with your real site URL (keep https and no trailing slash). -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Divya Sankalp">
+<meta property="og:title" content="Divya Sankalp – Book Pooja, Order Kundli, Shop Samagri">
+<meta property="og:description" content="Pan-India pooja booking, Kundli reports and certified spiritual products. Book in minutes.">
+<meta property="og:url" content="https://yourdomain.com/">
+<meta property="og:image" content="https://yourdomain.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Divya Sankalp – Book Pooja, Order Kundli">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Divya Sankalp – Book Pooja, Order Kundli, Shop Samagri">
+<meta name="twitter:description" content="Pan-India pooja booking, Kundli reports and certified spiritual products.">
+<meta name="twitter:image" content="https://yourdomain.com/og-image.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi:ital@0;1&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -28,9 +45,12 @@ const {useState,useEffect,useRef,useMemo}=React;
 
 /* ================= CONFIG – EDIT THESE ================= */
 const CFG={
-  ADMIN_EMAIL:"admin@yourdomain.com",          // all bookings go here
+  ADMIN_EMAIL:"gaurav.tanwer@gmail.com",          // all bookings go here
   BRAND:"Divya Sankalp",
-  WHATSAPP:"",                                  // optional e.g. 919999999999
+  DEV_NAME:"Arena ITsoft",                      // footer credit
+  DEV_URL:"https://www.arenaitsoft.in",        // change to the correct website link
+  WHATSAPP:"918130844864",                                  // admin WhatsApp number with country code, no +, e.g. 919999999999 → shows "Send on WhatsApp" button after submit
+  CALLMEBOT:{phone:"",apikey:""},               // optional free auto-WhatsApp to admin (see callmebot.com). phone e.g. "919999999999"
   // Free signup at emailjs.com. Create ONE template. In its settings set:
   //   To Email = {{to_email}}   |   Cc = {{cc_email}}   |   Reply-To = {{reply_to}}
   //   Subject = {{subject}}     |   Body contains {{message}}
@@ -94,6 +114,12 @@ hi:{tag:"पवित्र अनुष्ठान, कुछ ही मिन
 const inr=n=>"₹"+Number(n).toLocaleString("en-IN");
 
 /* ================= HELPERS ================= */
+function waText(subject,rows){return "🪔 NEW REQUEST: "+subject+"\n"+rows.map(r=>r[0]+": "+r[1]).join("\n")}
+function notifyAdminWA(subject,rows){ // free auto WhatsApp to admin via CallMeBot (optional)
+  const C=CFG.CALLMEBOT; if(!C.phone||!C.apikey)return;
+  const url="https://api.callmebot.com/whatsapp.php?phone="+encodeURIComponent(C.phone)+"&apikey="+encodeURIComponent(C.apikey)+"&text="+encodeURIComponent(waText(subject,rows).slice(0,1500));
+  fetch(url,{mode:"no-cors"}).catch(()=>{});
+}
 async function sendMail(subject,rows,toEmail,name){
   const msg=rows.map(r=>r[0]+": "+r[1]).join("\n"), E=CFG.EMAILJS;
   if(E.publicKey&&E.serviceId&&window.emailjs){
@@ -270,18 +296,19 @@ function HomeView({t,go}){
 function App(){
   const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
   const [view,setView]=useState("home"); const [cart,setCart]=useState({}); const [showCart,setShowCart]=useState(false);
-  const [modal,setModal]=useState(null); const [busy,setBusy]=useState(false);
+  const [modal,setModal]=useState(null); const [busy,setBusy]=useState(false); const [wa,setWa]=useState("");
   const [music,toggleMusic]=useMusic();
   useEffect(()=>{localStorage.setItem("lang",lang);document.documentElement.lang=lang==="hi"?"hi":"en"},[lang]);
   useEffect(()=>{window.scrollTo(0,0)},[view]);
   useEffect(()=>{ // PWA manifest + service worker (sw.js optional file)
-    const m={name:CFG.BRAND,short_name:"Sankalp",start_url:".",display:"standalone",background_color:"#2b1238",theme_color:"#2b1238",icons:[{src:"data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%232b1238'/><text y='.78em' x='14' font-size='70'>🪔</text></svg>"),sizes:"any",type:"image/svg+xml",purpose:"any"}]};
+    const m={name:CFG.BRAND,short_name:"Sankalp",start_url:".",display:"standalone",background_color:"#2b1238",theme_color:"#2b1238",icons:[["icon-192.png","192x192","any"],["icon-512.png","512x512","any"],["icon-maskable-512.png","512x512","maskable"]].map(i=>({src:new URL(i[0],location.href).href,sizes:i[1],type:"image/png",purpose:i[2]}))};
     const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/manifest+json"}));document.head.appendChild(l);
     if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
   },[]);
   const submit=async(subject,rows,email,name,done)=>{
     setBusy(true);
-    try{const r=await sendMail(subject,rows,email,name); setModal(r==="sent"?t.okB:t.okM); done&&done(); setShowCart(false)}
+    try{notifyAdminWA(subject,rows); setWa(CFG.WHATSAPP?"https://wa.me/"+CFG.WHATSAPP+"?text="+encodeURIComponent(waText(subject,rows)):"");
+      const r=await sendMail(subject,rows,email,name); setModal(r==="sent"?t.okB:t.okM); done&&done(); setShowCart(false)}
     catch(e){setModal(t.err)} setBusy(false)};
   const count=Object.values(cart).reduce((a,b)=>a+b,0);
   const nav=[["home","🏠"],["pooja","🪔"],["kundli","🔮"],["store","🛍️"]];
@@ -300,13 +327,16 @@ function App(){
       {view==="pooja"&&<PoojaView t={t} lang={lang} submit={submit}/>}
       {view==="kundli"&&<KundliView t={t} lang={lang} submit={submit}/>}
       {view==="store"&&<StoreView t={t} lang={lang} cart={cart} setCart={setCart}/>}
-      <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-ink/55">{t.foot}</p>
+      <footer className="mx-auto mt-10 max-w-3xl border-t border-plum/10 pt-5 text-center text-sm text-ink/55">
+        <p>{t.foot}</p>
+        <p className="mt-2">© {new Date().getFullYear()} {CFG.BRAND} · {lang==="hi"?"डेवलप्ड बाय":"Developed by"} <a href={CFG.DEV_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-plum underline-offset-2 hover:underline">{CFG.DEV_NAME}</a></p>
+      </footer>
     </main>
     <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 bg-white shadow-[0_-4px_16px_rgba(43,18,56,.12)] md:hidden" style={{paddingBottom:"env(safe-area-inset-bottom)"}}>
       {nav.map(n=><button key={n[0]} onClick={()=>setView(n[0])} className={"py-2.5 text-xs font-semibold "+(view===n[0]?"text-lotus":"text-ink/60")}><div className="text-xl">{n[1]}</div>{t[n[0]]}</button>)}</nav>
     {showCart&&<CartDrawer t={t} lang={lang} cart={cart} setCart={setCart} close={()=>setShowCart(false)} submit={submit}/>}
     {(busy||modal)&&<div className="fixed inset-0 z-[60] grid place-items-center bg-ink/70 p-4"><div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center">
-      {busy?<p className="font-semibold">…</p>:<><div className="text-4xl">🙏</div><h3 className="mt-2 font-disp text-2xl">{modal===t.err?"":t.okT}</h3><p className="mt-2 text-ink/70">{modal}</p><button onClick={()=>{setModal(null);if(modal!==t.err)setView("home")}} className="mt-5 w-full rounded-xl bg-ink py-3 font-bold text-white">{t.close}</button></>}</div></div>}
+      {busy?<p className="font-semibold">…</p>:<><div className="text-4xl">🙏</div><h3 className="mt-2 font-disp text-2xl">{modal===t.err?"":t.okT}</h3><p className="mt-2 text-ink/70">{modal}</p>{wa&&modal!==t.err&&<a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 block rounded-xl bg-[#25D366] py-3 font-bold text-white">{lang==="hi"?"WhatsApp पर भी भेजें":"Also send on WhatsApp"}</a>}<button onClick={()=>{setModal(null);if(modal!==t.err)setView("home")}} className="mt-5 w-full rounded-xl bg-ink py-3 font-bold text-white">{t.close}</button></>}</div></div>}
   </div>}
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>

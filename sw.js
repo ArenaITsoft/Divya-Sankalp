@@ -3,7 +3,7 @@
    Bump CACHE_VERSION whenever you update index.html so users get the new version. */
 const CACHE_VERSION = "v1";
 const CACHE = "divya-sankalp-" + CACHE_VERSION;
-const CORE = ["./", "./index.html"];
+const CORE = ["./", "./index.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 // Third-party libraries and fonts the app needs to render
 const CDN_HOSTS = [
